@@ -1,7 +1,8 @@
 import os
+import sys
 from playwright.sync_api import sync_playwright
 from pathlib import Path
-import xml.etree.ElementTree as ET
+from bs4 import BeautifulSoup  # <-- Forgiving XML parser
 import time
 
 # --- Configuration ---
@@ -10,10 +11,11 @@ XML_FILE_PATH = "sample_pt.xml"
 # --- End of Configuration ---
 
 def get_inner_xml(element):
-    """Helper function to get the full inner content of an XML element as a string."""
+    """Helper function to get the full inner content using Beautiful Soup."""
     if element is None:
         return ""
-    return (element.text or '') + ''.join(ET.tostring(e, encoding='unicode') for e in element)
+    # decode_contents() automatically handles returning the raw string inside the tag
+    return element.decode_contents().strip()
 
 def fill_ckeditor(page, locator_id, content):
     """Fills a CKEditor field using the proven click-source-fill-source method."""
@@ -37,14 +39,17 @@ def process_step_based_spt(page, all_steps):
             
             step_number = current_step_data.get("step-number", "")
             page.locator(f"#id_steptemplate_set-{set_index}-step_number").fill(step_number)
+            
             expression_element = current_step_data.find("expression")
-            expression = get_inner_xml(expression_element).strip() if expression_element is not None else ""
+            expression = get_inner_xml(expression_element)
             page.locator(f"#id_steptemplate_set-{set_index}-expression").fill(expression)
+            
             hint1_element = current_step_data.find("first-hint")
-            hint1 = get_inner_xml(hint1_element).strip() if hint1_element is not None else ""
+            hint1 = get_inner_xml(hint1_element)
             if hint1: fill_ckeditor(page, f"id_steptemplate_set-{set_index}-hint", hint1)
+            
             hint2_element = current_step_data.find("second-hint")
-            hint2 = get_inner_xml(hint2_element).strip() if hint2_element is not None else ""
+            hint2 = get_inner_xml(hint2_element)
             if hint2: fill_ckeditor(page, f"id_steptemplate_set-{set_index}-second_hint", hint2)
             
             if page.locator(f"#id_steptemplate_set-{set_index}-next_step").is_visible():
@@ -86,17 +91,21 @@ def process_mcq_steps(page, all_steps):
 
             step_number = current_step_data.get("step-number", "")
             page.locator(f"#id_steptemplate_set-{set_index}-step_number").fill(step_number)
+            
             alt_display_element = current_step_data.find("alternate-display")
-            alt_display = get_inner_xml(alt_display_element).strip() if alt_display_element is not None else ""
+            alt_display = get_inner_xml(alt_display_element)
             if alt_display: fill_ckeditor(page, f"id_steptemplate_set-{set_index}-alternate_display", alt_display)
+            
             hint1_element = current_step_data.find("first-hint")
-            hint1 = get_inner_xml(hint1_element).strip() if hint1_element is not None else ""
+            hint1 = get_inner_xml(hint1_element)
             if hint1: fill_ckeditor(page, f"id_steptemplate_set-{set_index}-hint", hint1)
+            
             hint2_element = current_step_data.find("second-hint")
-            hint2 = get_inner_xml(hint2_element).strip() if hint2_element is not None else ""
+            hint2 = get_inner_xml(hint2_element)
             if hint2: fill_ckeditor(page, f"id_steptemplate_set-{set_index}-second_hint", hint2)
+            
             is_correct_element = current_step_data.find("is-correct")
-            is_correct = is_correct_element.text.strip() if is_correct_element is not None else "false"
+            is_correct = is_correct_element.get_text(strip=True) if is_correct_element is not None else "false"
             page.locator(f"#id_steptemplate_set-{set_index}-is_correct").select_option(is_correct)
         
         step_idx_to_process += num_steps_in_batch
@@ -111,8 +120,10 @@ def create_subproblem(context, pt_url, subproblem_element, subproblem_index):
     
     spt_type = subproblem_element.get("type")
     spt_instruction_element = subproblem_element.find("instruction")
-    spt_instruction = get_inner_xml(spt_instruction_element).strip() if spt_instruction_element is not None else ""
-    all_steps = subproblem_element.findall(".//step")
+    spt_instruction = get_inner_xml(spt_instruction_element)
+    
+    # BS4 uses find_all instead of findall
+    all_steps = subproblem_element.find_all("step")
     print(f"  - Type: {spt_type}, Found {len(all_steps)} steps/choices.")
 
     page = context.new_page()
@@ -134,7 +145,6 @@ def create_subproblem(context, pt_url, subproblem_element, subproblem_index):
     spt_page.wait_for_load_state("networkidle")
     print("  - Stage 1 complete. Fields are visible.")
 
-    # **THE FIX IS HERE:**
     step_based_types = [
         "equation", "algebraic", "numeric", "inequality", "inline", 
         "graph-plot", "box-plot", "histogram", "number-line"
@@ -167,13 +177,25 @@ def run():
         page = context.new_page()
         page.goto("https://mathspace.co/admin/problem_templates/problemtemplate/add/")
         
-        tree = ET.parse(XML_FILE_PATH)
-        root = tree.getroot()
-        pt_title = root.get("id")
-        instruction_content = get_inner_xml(root.find("instruction")).strip()
-        attachment_content = get_inner_xml(root.find("attachment")).strip()
-        mathyons_vars_element = root.find("mathyon-s")
-        mathyons_vars = mathyons_vars_element.text.strip() if mathyons_vars_element is not None else ""
+        # Load the file using Beautiful Soup with the 'xml' parser
+        try:
+            with open(XML_FILE_PATH, 'r', encoding='utf-8') as f:
+                soup = BeautifulSoup(f, 'xml')
+        except Exception as e:
+            print(f"\n❌ CRITICAL ERROR: Could not read the XML file.")
+            print(f"Details: {e}")
+            sys.exit(1)
+
+        # The 'soup' object acts as the root. We find the first main tag to get the ID.
+        root = soup.find() 
+        pt_title = root.get("id") if root else "Unknown_ID"
+        
+        # recursive=False ensures we only grab the PT-level instruction, not an SPT-level one
+        instruction_content = get_inner_xml(root.find("instruction", recursive=False))
+        attachment_content = get_inner_xml(root.find("attachment", recursive=False))
+        
+        mathyons_vars_element = root.find("mathyon-s", recursive=False)
+        mathyons_vars = mathyons_vars_element.get_text(strip=True) if mathyons_vars_element else ""
 
         page.locator("#id_title").fill(pt_title)
         page.locator("#id_basesubtopic_text").fill(base_subtopic)
@@ -195,7 +217,7 @@ def run():
         # --- End of PT Shell Creation ---
         
         # --- Create Subproblems ---
-        subproblem_elements = root.findall(".//subproblem")
+        subproblem_elements = soup.find_all("subproblem")
         for i, spt_element in enumerate(subproblem_elements):
             create_subproblem(context, pt_url, spt_element, subproblem_index=i + 1)
         
