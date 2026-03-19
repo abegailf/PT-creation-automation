@@ -1,4 +1,4 @@
-# Problem Template Creation Automato
+# Problem Template Creation Automator
 
 This project contains a Python script that automates the creation of Problem Templates (PTs) and their subproblems on the Mathspace admin platform. It uses Playwright to drive a web browser, reading all the necessary data from a local XML file (`sample_pt.xml`).
 
