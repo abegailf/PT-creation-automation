@@ -1,190 +1,393 @@
-<problem-template id="Calculus : Differentiating a function with fractional powers using the quotient rule">
+<problem-template id="Sample XML">
   <instruction>
-    <p>For the function <mi>y = (sqrt(x) + 1) / (coeff*x^2)</mi>:</p>
+    <p>In a physics experiment, students investigate the relationship between the volume of a gas and its pressure at a constant temperature (Boyle&#39;s Law).</p>
+    
+    <p>The following data were collected:</p>
   </instruction>
-  <attachment></attachment>
+  <attachment>
+    <table class="table table-bordered table-clean text-center table-valign-middle table-striped table-condensed">
+    	<thead>
+    		<tr>
+    			<th scope="col">Volume in Liters (<mi>x</mi>)</th>
+    			<th scope="col">Pressure in kPa (<mi>y</mi>)</th>
+    		</tr>
+    	</thead>
+    	<tbody>
+    		<tr>
+    			<td><mi>x1</mi></td>
+    			<td><mi>y1</mi></td>
+    		</tr>
+    		<tr>
+    			<td><mi>x2</mi></td>
+    			<td><mi>y2</mi></td>
+    		</tr>
+    		<tr>
+    			<td><mi>x3</mi></td>
+    			<td><mi>y3</mi></td>
+    		</tr>
+    		<tr>
+    			<td><mi>x4</mi></td>
+    			<td><mi>y4</mi></td>
+    		</tr>
+    		<tr>
+    			<td><mi>x5</mi></td>
+    			<td><mi>y5</mi></td>
+    		</tr>
+    		<tr>
+    			<td><mi>x6</mi></td>
+    			<td><mi>y6</mi></td>
+    		</tr>
+    	</tbody>
+    </table>
+  </attachment>
   <mathyon-s>
-    # The fixed coefficient in the denominator of the function y = (sqrt(x) + 1) / (coeff*x^2).
-        # The divisor is the HCF that will be factored out later.
-        coeff, divisor = randpick(
-            (20, 10),
-            (30, 15),
-            (40, 20)
-        )
+    # --- Data Generation (n=6) ---
+    # Use larger x-values so y-values stay in a smaller, student-friendly range.
+    x1, x2, x3, x4, x5, x6 = randpick(
+      (4, 5, 6, 8, 10, 12),
+      (4, 6, 8, 12, 16, 24),
+      (5, 6, 8, 10, 15, 20)
+    )
     
-        # Declare the function f(x) which will be used to represent y.
-        # This allows us to use function notation like f(x) in instructions and hints.
-        function.declare(f, x)
-        function.equals(f, (sqrt(x) + 1) / (coeff * x^2))
+    # Underlying Model: P = 120/V approx (with small noise)
+    y1 = N(round(120/x1 + randint(-2, 2)))
+    y2 = N(round(120/x2 + randint(-2, -1)))
+    y3 = N(round(120/x3 + randint(-2, 2)))
+    y4 = N(round(120/x4 + randint(-2, 2)))
+    y5 = N(round(120/x5 + randint(1, 2)))
+    y6 = N(round(120/x6 + randint(-1, 1)))
     
-        # For explaining the quotient rule, we define the numerator u(x) and the denominator v(x).
-        function.declare(u, x)
-        function.equals(u, sqrt(x) + 1)
-        function.declare(v, x)
-        function.equals(v, coeff * x^2)
+        # --- SPT 1: Scatterplot Points ---
+        P1 = plot.point(x1, y1)
+        P2 = plot.point(x2, y2)
+        P3 = plot.point(x3, y3)
+        P4 = plot.point(x4, y4)
+        P5 = plot.point(x5, y5)
+        P6 = plot.point(x6, y6)
     
-        # Pre-calculate coefficients that will appear during the differentiation steps.
-        # This ensures consistency and simplifies the expression tags later.
+        # Interactive points start at y=0
+        S1 = plot.point(x1, 0)
+        S2 = plot.point(x2, 0)
+        S3 = plot.point(x3, 0)
+        S4 = plot.point(x4, 0)
+        S5 = plot.point(x5, 0)
+        S6 = plot.point(x6, 0)
     
-        # Coefficient from the first term of the quotient rule numerator: v * u'
-        # e.g., (30 * x^2) * (1/2 * x^(-1/2)) = 15 * x^(3/2)
-        coeffVmultUprime = N(coeff / 2)
+    # SPT 3: Transformation (1/x)
+    # IMPORTANT: force FLOATS using 1.0 and 100.0, then round to 2 d.p.
+    # This ensures the regression uses the same (rounded) 1/x values students enter.
     
-        # Coefficient from the second term of the quotient rule numerator: u * v'
-        # e.g., (sqrt(x) + 1) * (60 * x)
-        coeffVprime = N(coeff * 2)
+    valRx1 = (round(100*(1/x1))/100)
+    valRx2 = (round(100*(1/x2))/100)
+    valRx3 = (round(100*(1/x3))/100)
+    valRx4 = (round(100*(1/x4))/100)
+    valRx5 = (round(100*(1/x5))/100)
+    valRx6 = (round(100*(1/x6))/100)
     
-        # Coefficients in the expanded numerator before simplification:
-        # e.g., 15*x^(3/2) - 60*x^(3/2) - 60*x = -45*x^(3/2) - 60*x
-        numCoeffTerm1 = N(coeffVmultUprime - coeffVprime)
-        numCoeffTerm2 = N(-coeffVprime)
+    rx1 = fixeddec(valRx1, 2)
+    rx2 = fixeddec(valRx2, 2)
+    rx3 = fixeddec(valRx3, 2)
+    rx4 = fixeddec(valRx4, 2)
+    rx5 = fixeddec(valRx5, 2)
+    rx6 = fixeddec(valRx6, 2)
     
-        # Coefficient in the denominator before simplification: e.g., (30*x^2)^2 = 900*x^4
-        denCoeff = N(coeff^2)
+    # SPT 4 and 5: Regression Statistics (use rounded valRx values)
     
-        # After factoring 'divisor*x' from the numerator and denominator, we get the final simplified coefficients.
-        # e.g., Final form: (-3*sqrt(x) - 4) / (60*x^3)
-        finalNumCoeffSqrt = N(numCoeffTerm1 / divisor)
-        finalNumCoeffConst = N(numCoeffTerm2 / divisor)
-        finalDenCoeff = N(denCoeff / divisor)
+    sumRx  = N(valRx1 + valRx2 + valRx3 + valRx4 + valRx5 + valRx6)
+    meanRx = N(sumRx / 6)
+    
+    sumY  = N(y1 + y2 + y3 + y4 + y5 + y6)
+    meanY = N(sumY / 6)
+    
+    sumSqXX = N(
+      (valRx1-meanRx)^2 + (valRx2-meanRx)^2 + (valRx3-meanRx)^2 +
+      (valRx4-meanRx)^2 + (valRx5-meanRx)^2 + (valRx6-meanRx)^2
+    )
+    
+    sumSqYY = N(
+      (y1-meanY)^2 + (y2-meanY)^2 + (y3-meanY)^2 +
+      (y4-meanY)^2 + (y5-meanY)^2 + (y6-meanY)^2
+    )
+    
+    sumSqXY = N(
+      (valRx1-meanRx)*(y1-meanY) + (valRx2-meanRx)*(y2-meanY) +
+      (valRx3-meanRx)*(y3-meanY) + (valRx4-meanRx)*(y4-meanY) +
+      (valRx5-meanRx)*(y5-meanY) + (valRx6-meanRx)*(y6-meanY)
+    )
+    
+    rVal  = N(sumSqXY / sqrt(sumSqXX * sumSqYY))
+    rDisp = fixeddec(rVal, 2)
+    
+    slopeB     = N(sumSqXY / sumSqXX)
+    slopeBDisp = fixeddec(slopeB, 3)
+    
+    intA     = N(meanY - slopeB * meanRx)
+    intADisp = fixeddec(intA, 3)
+    
+    slopeB2 = fixeddec(rDisp*sqrt(sumSqYY)/sqrt(sumSqXX), 3)
+    intA2 = fixeddec(meanY - slopeB2 * meanRx, 3)
+    
+    slopeB3 = fixeddec(rVal*sqrt(sumSqYY)/sqrt(sumSqXX), 3)
+    intA3 = fixeddec(meanY - slopeB3 * meanRx, 3)
     
   </mathyon-s>
   <subproblems>
-    <subproblem id="195779" type="equation">
+    <subproblem id="198806" type="graph-plot">
       <instruction>
-        <p>Calculate <mi>diff(y, x)</mi>.</p>
+        <p>Use technology to create a scatterplot of these data.</p>
+        <graphplot data-axis-intersection="bottom-left" data-interactive-layer="set(S1,S2,S3,S4,S5,S6)" data-tick-label-format="fraction" data-x-label="Volume (x)" data-x-major-unit="5" data-x-max="25" data-x-minor-unit="1" data-y-label="Pressure (y)" data-y-major-unit="5" data-y-max="40" data-y-min="0" data-y-minor-unit="1"> </graphplot>
       </instruction>
       <mathyon-r>
         
         
       </mathyon-r>
       <steps>
-        <step step-number="0" next-step="1">
+        <step step-number="1" next-step="None">
           <expression>
-            y = (sqrt(x) + 1) / (coeff * x^2)
+            set(P1,P2,P3,P4,P5,P6)
           </expression>
+          <first-hint>
+            <p>Drag each point on the graph so that it matches the (Volume, Pressure) pairs from the table.</p>
+          </first-hint>
+          <second-hint>
+            <p>The horizontal axis is Volume (<mi>x</mi>) and the vertical axis is Pressure (<mi>y</mi>).</p>
+          </second-hint>
+        </step>
+      </steps>
+    </subproblem>
+    <subproblem id="198807" type="multiple-choice">
+      <instruction>
+        <p>Does the data set appear to be linear or non-linear?</p>
+      </instruction>
+      <mathyon-r>
+        
+        
+      </mathyon-r>
+      <steps>
+        <step step-number="1" next-step="None">
+          <alternate-display>
+            <p>Non-linear</p>
+          </alternate-display>
+          <first-hint>
+            <p>Do the data points appear to fall approximately along a straight line, or do they better fit some other curve or pattern?</p>
+          </first-hint>
+          <second-hint>
+            <p>As volume increases, pressure decreases rapidly at first and then levels out.</p>
+          </second-hint>
+          <is-correct>
+            true
+          </is-correct>
+        </step>
+        <step step-number="2" next-step="None">
+          <alternate-display>
+            <p>Linear</p>
+          </alternate-display>
+          <first-hint></first-hint>
+          <second-hint></second-hint>
+          <is-correct>
+            false
+          </is-correct>
+        </step>
+      </steps>
+    </subproblem>
+    <subproblem id="198808" type="inline">
+      <instruction>
+        <p>Perform the transformation of the <mqlatex>x</mqlatex>-values by completing the last column of the table.</p>
+        
+        <p>Round your answers to two decimal places.</p>
+        
+        <table class="table table-bordered table-clean text-center table-valign-middle">
+        	<thead>
+        		<tr>
+        			<th>Volume (<mi>x</mi>)</th>
+        			<th>Pressure (<mi>y</mi>)</th>
+        			<th>Reciprocal <mqlatex>\left(\frac{1}{x}\right)</mqlatex></th>
+        		</tr>
+        	</thead>
+        	<tbody>
+        		<tr>
+        			<td><mi>x1</mi></td>
+        			<td><mi>y1</mi></td>
+        			<td><answer>1</answer></td>
+        		</tr>
+        		<tr>
+        			<td><mi>x2</mi></td>
+        			<td><mi>y2</mi></td>
+        			<td><answer>2</answer></td>
+        		</tr>
+        		<tr>
+        			<td><mi>x3</mi></td>
+        			<td><mi>y3</mi></td>
+        			<td><answer>3</answer></td>
+        		</tr>
+        		<tr>
+        			<td><mi>x4</mi></td>
+        			<td><mi>y4</mi></td>
+        			<td><answer>4</answer></td>
+        		</tr>
+        		<tr>
+        			<td><mi>x5</mi></td>
+        			<td><mi>y5</mi></td>
+        			<td><answer>5</answer></td>
+        		</tr>
+        		<tr>
+        			<td><mi>x6</mi></td>
+        			<td><mi>y6</mi></td>
+        			<td><answer>6</answer></td>
+        		</tr>
+        	</tbody>
+        </table>
+      </instruction>
+      <mathyon-r>
+        
+        
+      </mathyon-r>
+      <steps>
+        <step step-number="1" next-step="None">
+          <expression>
+            rx1
+          </expression>
+          <initial-value></initial-value>
+          <first-hint>
+            <p>To find the transformed value, we calculate the reciprocal of the volume (<mqlatex>x</mqlatex>).</p>
+            
+            <p>The formula is <mqlatex>\frac{1}{x}</mqlatex>.</p>
+          </first-hint>
+          <second-hint>
+            <p>For the first row, the volume is <mi>x1</mi>.</p>
+            
+            <p>Calculate <mi>1/x1</mi> and round to two decimal places.</p>
+            
+            <p>Do the same for the next rows.</p>
+          </second-hint>
+        </step>
+        <step step-number="2" next-step="None">
+          <expression>
+            rx2
+          </expression>
+          <initial-value></initial-value>
           <first-hint></first-hint>
           <second-hint></second-hint>
         </step>
-        <step step-number="1" next-step="2">
+        <step step-number="3" next-step="None">
           <expression>
-            y = (x^(1/2) + 1) / (coeff * x^2)
+            rx3
           </expression>
-          <first-hint>
-            <p>To prepare for differentiation, we can rewrite the square root term in index form using the property <mqlatex>\sqrt{a} = a^{\frac{1}{2}}</mqlatex>.</p>
-          </first-hint>
+          <initial-value></initial-value>
+          <first-hint></first-hint>
           <second-hint></second-hint>
         </step>
-        <step step-number="2" next-step="3">
+        <step step-number="4" next-step="None">
           <expression>
-            diff(y, x) = ((coeff * x^2) * (1/2 * x^refine(-1/2)) - (x^(1/2) + 1) * (coeffVprime * x)) / ((coeff * x^2)^2)
+            rx4
           </expression>
-          <first-hint>
-            <p>The function is a quotient of two simpler functions. We can let <mi>u = x^(1/2) + 1</mi> and <mi>v = coeff*x^2</mi>.</p>
-            
-            <p>We can then use the quotient rule, <mqlatex>\frac{d}{dx}\left(\frac{u}{v}\right) = \frac{v\frac{du}{dx} - u\frac{dv}{dx}}{v^2}</mqlatex>, to find the derivative.</p>
-          </first-hint>
-          <second-hint>
-            <p>First, we find the derivatives of <mi>u</mi> and <mi>v</mi>.</p>
-            
-            <p><mqlatex>\frac{du}{dx} = \frac{1}{2}x^{-\frac{1}{2}}</mqlatex></p>
-            
-            <p><mi>dv/dx = coeffVprime *x</mi></p>
-            
-            <p>Now, we substitute these into the quotient rule formula.</p>
-          </second-hint>
-        </step>
-        <step step-number="3" next-step="4">
-          <expression>
-            diff(y, x) = (coeffVmultUprime * x^(3/2) - (x^(1/2) + 1) * (coeffVprime * x)) / ((coeff * x^2)^2)
-          </expression>
-          <first-hint>
-            <p>Let&#39;s simplify the first product in the numerator, <mi>(coeff * x^2) * (1/2 * x^(-1/2))</mi>, using the index law <mqlatex>a^m \times a^n = a^{m+n}</mqlatex>.</p>
-          </first-hint>
+          <initial-value></initial-value>
+          <first-hint></first-hint>
           <second-hint></second-hint>
         </step>
-        <step step-number="4" next-step="5">
+        <step step-number="5" next-step="None">
           <expression>
-            diff(y, x) = (coeffVmultUprime * x^(3/2) - (coeffVprime * x^(3/2) + coeffVprime * x)) / ((coeff * x^2)^2)
+            rx5
           </expression>
-          <first-hint>
-            <p>Now, let&#39;s expand the brackets in the second part of the numerator by multiplying <mi>coeffVprime*x</mi> by each term inside the brackets.</p>
-          </first-hint>
+          <initial-value></initial-value>
+          <first-hint></first-hint>
           <second-hint></second-hint>
         </step>
-        <step step-number="5" next-step="6">
+        <step step-number="6" next-step="None">
           <expression>
-            diff(y, x) = (coeffVmultUprime * x^(3/2) - coeffVprime * x^(3/2) - coeffVprime * x) / ((coeff * x^2)^2)
+            rx6
           </expression>
-          <first-hint>
-            <p>We can distribute the negative sign into the brackets in the numerator.</p>
-          </first-hint>
-          <second-hint></second-hint>
-        </step>
-        <step step-number="6" next-step="7">
-          <expression>
-            diff(y, x) = refine(numCoeffTerm1 * x^(3/2) + numCoeffTerm2 * x) / ((coeff * x^2)^2)
-          </expression>
-          <first-hint>
-            <p>We can now simplify the numerator by combining the like terms involving <mqlatex>x^{\frac{3}{2}}</mqlatex>.</p>
-          </first-hint>
-          <second-hint></second-hint>
-        </step>
-        <step step-number="7" next-step="8">
-          <expression>
-            diff(y, x) = refine(numCoeffTerm1 * x^(3/2) + numCoeffTerm2 * x) / (denCoeff * x^4)
-          </expression>
-          <first-hint>
-            <p>Next, we simplify the denominator by applying the power to both the coefficient and the variable, using the index law <mqlatex>\left(ab\right)^n = a^n b^n</mqlatex>.</p>
-          </first-hint>
-          <second-hint></second-hint>
-        </step>
-        <step step-number="8" next-step="9">
-          <expression>
-            diff(y, x) = refine(x * (numCoeffTerm1 * x^(1/2) + numCoeffTerm2)) / (denCoeff * x^4)
-          </expression>
-          <first-hint>
-            <p>To simplify the fraction, we can factor out the lowest power of <mi>x</mi> from the terms in the numerator.</p>
-          </first-hint>
-          <second-hint></second-hint>
-        </step>
-        <step step-number="9" next-step="10">
-          <expression>
-            diff(y, x) = refine(numCoeffTerm1 * x^(1/2) + numCoeffTerm2) / (denCoeff * x^3)
-          </expression>
-          <first-hint>
-            <p>We can now cancel the common factor of <mi>x</mi> from the numerator and the denominator.</p>
-          </first-hint>
-          <second-hint></second-hint>
-        </step>
-        <step step-number="10" next-step="11">
-          <expression>
-            diff(y, x) = refine(15 * (finalNumCoeffSqrt * x^(1/2) + finalNumCoeffConst)) / (denCoeff * x^3)
-          </expression>
-          <first-hint>
-            <p>Now, let&#39;s factor out the highest common numerical factor from the two terms in the numerator.</p>
-          </first-hint>
-          <second-hint></second-hint>
-        </step>
-        <step step-number="11" next-step="12">
-          <expression>
-            diff(y, x) = refine(finalNumCoeffSqrt * x^(1/2) + finalNumCoeffConst) / (finalDenCoeff * x^3)
-          </expression>
-          <first-hint>
-            <p>Finally, we can simplify the numerical part of the fraction by cancelling the common factor between the numerator and denominator.</p>
-          </first-hint>
-          <second-hint></second-hint>
-        </step>
-        <step step-number="12" next-step="None">
-          <expression>
-            diff(y, x) = refine(finalNumCoeffSqrt * sqrt(x) + finalNumCoeffConst) / (finalDenCoeff * x^3)
-          </expression>
-          <first-hint>
-            <p>We can write the answer in surd form by converting <mqlatex>x^{\frac{1}{2}}</mqlatex> back to <mqlatex>\sqrt{x}</mqlatex>.</p>
-          </first-hint>
+          <initial-value></initial-value>
+          <first-hint></first-hint>
           <second-hint></second-hint>
         </step>
       </steps>
     </subproblem>
-   </subproblems>
+    <subproblem id="198809" type="numeric">
+      <instruction>
+        <p>Determine the coefficient of correlation of the transformed data set.</p>
+        
+        <p>Round your answer to two decimal places.</p>
+      </instruction>
+      <mathyon-r>
+        variable.equals(r, rDisp)
+        
+      </mathyon-r>
+      <steps>
+        <step step-number="1" next-step="None">
+          <expression>
+            rDisp
+          </expression>
+          <first-hint>
+            <p>Use the calculator&#39;s statistics mode.</p>
+          </first-hint>
+          <second-hint>
+            <p>Enter the <mi>1/x</mi> values as the independent variable list and the <mqlatex>y</mqlatex> values as the dependent variable list.</p>
+          </second-hint>
+        </step>
+      </steps>
+    </subproblem>
+    <subproblem id="198810" type="algebraic">
+      <instruction>
+        <p>Determine the equation of the least-squares regression line for the transformed data set.</p>
+        
+        <p>Give your answer in the form <mqlatex>y = a + b \left(\frac{1}{x}\right)</mqlatex>, where <mqlatex>a</mqlatex> and <mqlatex>b</mqlatex> are rounded to three decimal place.</p>
+      </instruction>
+      <mathyon-r>
+        variable.equals(a, intADisp)
+        variable.equals(b, slopeBDisp)
+        
+      </mathyon-r>
+      <steps>
+        <step step-number="1" next-step="None">
+          <expression>
+            intADisp + slopeBDisp * {1/x}
+          </expression>
+          <first-hint>
+            <p>Calculate the gradient <mqlatex>b</mqlatex> using technology.</p>
+            
+            <p>Calculate the intercept <mqlatex>a</mqlatex> using the formula <mqlatex>a = \bar{y} - b\bar{x}_{trans}</mqlatex>, where <mqlatex>\bar{y}</mqlatex> is the mean of <mqlatex>y</mqlatex> and <mqlatex>\bar{x}_{trans}</mqlatex> is the mean of the transformed <mqlatex>x</mqlatex> values.</p>
+          </first-hint>
+          <second-hint>
+            <p>Substitute the values of <mqlatex>a</mqlatex> and <mqlatex>b</mqlatex> into the equation form <mqlatex>y = a + b \left(\frac{1}{x}\right)</mqlatex>.</p>
+          </second-hint>
+        </step>
+        <step step-number="2" next-step="None">
+          <expression>
+            intA2 + slopeB2 * {1/x}
+          </expression>
+          <first-hint></first-hint>
+          <second-hint></second-hint>
+        </step>
+        <step step-number="3" next-step="None">
+          <expression>
+            intA3 + slopeB3 * {1/x}
+          </expression>
+          <first-hint></first-hint>
+          <second-hint></second-hint>
+        </step>
+        <step step-number="4" next-step="None">
+          <expression>
+            intADisp + slopeBDisp/x
+          </expression>
+          <first-hint></first-hint>
+          <second-hint></second-hint>
+        </step>
+        <step step-number="5" next-step="None">
+          <expression>
+            intA2 + slopeB2/x
+          </expression>
+          <first-hint></first-hint>
+          <second-hint></second-hint>
+        </step>
+        <step step-number="6" next-step="None">
+          <expression>
+            intA3 + slopeB3/x
+          </expression>
+          <first-hint></first-hint>
+          <second-hint></second-hint>
+        </step>
+      </steps>
+    </subproblem>
+  </subproblems>
 </problem-template>
